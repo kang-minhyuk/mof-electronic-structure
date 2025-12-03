@@ -42,7 +42,7 @@ Data directories:
 - `data/metadata/`  
   Data source information, IDs, provenance, and mapping files.
 
-See `data/README.md` (to be created) for instructions on how to obtain and prepare data.
+See `data/README.md` for instructions on how to obtain and prepare data.
 
 ---
 
