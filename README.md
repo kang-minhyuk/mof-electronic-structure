@@ -19,9 +19,6 @@ To address this, we assembled a **high-fidelity HSE06 dataset (~14.7k MOFs)** an
 Key points:
 
 - High-quality electronic structure labels from **HSE06**.
-- Balanced coverage over the full band-gap spectrum, including:
-  - Near-conductive: 472 structures (Eg < 1.5 eV)  
-  - Insulating: 468 structures (Eg > 6 eV)
 - Benchmarking of **graph neural networks (CGCNN and variants)** and **gradient-boosted trees (XGBoost)**.
 
 ### 1.2 Dataset
