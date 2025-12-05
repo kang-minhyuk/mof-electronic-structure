@@ -1,105 +1,65 @@
 # XGBoost Feature-Based Band Gap Prediction
 
-This directory contains the full machine-learning pipeline for **feature-driven prediction of MOF band gaps** using classical models (primarily XGBoost).  
-The workflow integrates descriptors from **Matminer**, **mofdscribe**, and additional MOF structural/porosity feature sources.
-
-The goal of this pipeline is to benchmark classical ML methods against CGCNN and to identify the most physically meaningful descriptors for predicting hybrid-DFT (HSE06) band gaps of MOFs.
+This directory contains the full ML pipeline for feature-driven prediction of MOF band gaps using classical models (primary entry point: `main.py`). It integrates descriptors from Matminer, mofdscribe, and additional MOF structural/porosity feature sources to benchmark classical ML vs CGCNN and to identify physically meaningful descriptors for predicting HSE06 band gaps.
 
 ---
 
-## Directory Structure
+## Directory structure
 
 xgb/
-├── xgb_feature_selection.py        # Full feature selection + model evaluation script
-├── xgb_shap_analysis.py            # SHAP-based interpretability analysis
-├── README.md                       # This file
-└── results/                        # Output metrics, plots, and analyses
+├── main.py                          # Primary entry point: orchestrates feature merging, training, evaluation, and SHAP steps
+├── xgb_shap_analysis.py             # Optional/legacy SHAP analysis utilities (can be invoked separately)
+├── README.md                        # This file
+└── results/                         # Output metrics, plots, and analyses
 
 ---
 
-## 1. Data Requirements
+## Data requirements
 
-Due to size limitations, **raw datasets are not included in the repository**.
+Raw datasets are not included. To run the pipeline, provide precomputed feature tables (recommended paths shown):
 
-To reproduce the XGBoost pipeline, download or generate the following feature tables:
+- data/matminer_features.csv          (matminer descriptors)
+- data/mof_features_combined.csv      (geometric/porosity, custom MOF features)
+- data/mofdscribe_results.csv         (mofdscribe descriptors)
 
-### 1. Matminer Features  
-Documentation:  
-https://hackingmaterials.lbl.gov/matminer/
-
-Example file:  
-
-matminer_features.csv
-
-### 2. MOF Feature Bundle  
-Includes geometric and chemical descriptors (e.g., bond length statistics, neighbor distances, structural complexity, pore metrics).
-
-Example file:  
-
-mof_features_combined.csv
-
-### 3. mofdscribe Descriptors  
-Documentation:  
-https://mofdscribe.readthedocs.io/en/latest/
-
-Example file:  
-
-mofdscribe_results.csv
-
-or update paths in your script accordingly.
+Update paths passed to `main.py` (or the individual scripts) if your files are located elsewhere.
 
 ---
 
-## 2. Pipeline Overview
+## Pipeline overview
 
-The full pipeline proceeds in four stages:
+Stage 1 — Feature extraction (external)
+- Compute descriptors externally using Matminer, mofdscribe, and any custom scripts.
 
-### **Stage 1 — Feature Extraction (external)**
-Descriptors are computed externally using Matminer, mofdscribe, and custom scripts.  
-This repository does not compute them automatically, but provides instructions.
+Stage 2 — Feature merging
+- Merge descriptor tables on the primary key (qmof_id) to produce a single dataframe for modeling.
 
-### **Stage 2 — Feature Merging**
-All descriptors are merged into a single dataframe keyed by:
+Stage 3 — Feature selection & model evaluation (invoked via `main.py`)
+- `main.py` serves as the orchestrator for training XGBoost models across multiple random seeds (default seeds are configurable).
+- Computes average feature importances and evaluates model performance as a function of top-k features.
+- Typical outputs:
+    - results/xgb/avg_feature_importances.csv
+    - results/xgb/model_performance_by_top_features.csv
+    - results/xgb/performance_vs_features.png
+    - results/xgb/best_model_pred_vs_actual.png
 
-qmof_id
-
-### **Stage 3 — Feature Selection with XGBoost**
-- Train models over random seeds 0–9  
-- Compute average feature importances  
-- Evaluate top-k features for k = 50 → 5  
-- Identify optimal feature subset  
-- Save:
-  - `avg_feature_importances.csv`
-  - `model_performance_by_top_features.csv`
-  - `performance_vs_features.png`
-  - `best_model_pred_vs_actual.png`
-
-## 4. Running SHAP Analysis
-
-python xgb_SHAP_analysis.py 
-–matminer-features data/raw/matminer_features.csv 
-–mof-features data/raw/mof_features_combined.csv 
-–mofdscribe-results data/raw/mofdscribe_results.csv 
-–avg-importances results/xgb/avg_feature_importances.csv 
-–top-n 30 
-–outdir results/xgb/shap
-
-Outputs:
-
-shap_summary_top30.png
+Stage 4 — SHAP analysis
+- SHAP computations can be run through `main.py` or `xgb_shap_analysis.py` to produce interpretability plots for a chosen trained model or top-n features.
+- Typical outputs:
+    - results/xgb/shap/shap_summary_top30.png
+    - results/xgb/shap/shap_beeswarm_top30.png (if enabled)
 
 ---
 
-## 5. Feature Groups Used
+## Feature groups used
 
-The pipeline uses the following descriptor categories:
+The merged descriptor table typically includes:
+- Bond length statistics
+- Neighbor distance variations
+- Structural complexity measures
+- Packing metrics, density, porosity (ASA, VSA, accessible pore volumes)
+- RDF histogram features
+- Crystallographic attributes (space group, symmetry, dimensionality)
+- Pore geometry and related ratios
 
-- **Bond length statistics**  
-- **Neighbor distance variations**  
-- **Structural complexity measures**  
-- **Packing metrics, density, porosity**  
-- **RDF histogram features**  
-- **Crystallographic attributes (space group, symmetry, dimensionality)**  
-- **Pore features (ASA, VSA, A/V ratios, accessible pore volumes)**  
-
-The merged descriptor table includes all of these categories, and the pipeline automatically selects relevant columns.
+The pipeline selects relevant columns automatically; adjust selection logic or configuration passed to `main.py` if you change descriptor names or prefixes.

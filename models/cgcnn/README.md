@@ -1,229 +1,214 @@
 # CGCNN for MOF Band Gap Prediction
 
-This directory contains a full, reproducible implementation of a **Crystal Graph Convolutional Neural Network (CGCNN)** for predicting electronic properties of metal–organic frameworks (MOFs), with a focus on HSE06 band gap prediction.
+This directory contains a reproducible implementation of a Crystal Graph Convolutional Neural Network (CGCNN) for predicting electronic properties of metal–organic frameworks (MOFs), focused on HSE06 band gap prediction.
 
-It includes:
-
-- A modified CGCNN architecture with residual connections  
-- Optional Global Context Module  
-- Support for custom atom embeddings (`atom_init.json` + variants)  
-- Optional partial charge augmentation  
-- Full training pipeline with WandB logging  
-- A clean inference pipeline for prediction  
-- Reproducible dataset construction and splitting  
+Key features:
+- Modified CGCNN with residual skip connections
+- Optional Global Context Module for long-range information
+- Support for custom atom embeddings (atom_init.json and variants)
+- Optional partial-charge augmentation
+- Full training pipeline with Weights & Biases (WandB) logging
+- Simple inference pipeline and reproducible dataset construction
 
 ---
 
-## Directory Structure
+## Directory structure
 
 cgcnn/
-├── main.py                # Training pipeline  
-├── model.py               # CGCNN architecture (residual + global context)  
-├── data.py                # CIFData loader + embeddings + partial charges  
-├── predict.py             # Inference script  
-└── README.md              # This file  
+```
+├── main.py        # Training pipeline
+├── model.py       # CGCNN architecture (residual + global context)
+├── data.py        # CIFData loader, embeddings, partial charges
+├── predict.py     # Inference script
+└── README.md      # This file
+```
 
 ---
 
 ## 1. Requirements
 
 Recommended environment:
-
 - Python 3.9+
 - PyTorch >= 2.0
 - pymatgen
 - scikit-learn
 - wandb
+- numpy
 
-Install dependencies:
-
+Install:
+```
 pip install torch pymatgen scikit-learn wandb numpy
+```
 
 ---
 
-## 2. Dataset Structure
+## 2. Dataset layout
 
-Place your processed dataset in the following format:
+Place your processed dataset under a dataset root:
 
+```
 data/
 ├── id_prop.csv
 ├── atom_init.json
-├── atom_init_<variant>.json        # optional embedding variants
+├── atom_init_<variant>.json    # optional embedding variants
 └── <qmof_id>.cif
+```
 
-### id_prop.csv (example)
-
+id_prop.csv (example):
+```
 qmof_id,target
 QMOF_0001,2.14
 QMOF_0002,0.83
+```
 
-### Atom Embedding Files
+Atom embedding files:
+- atom_init.json — default atom embedding
+- atom_init_<variant>.json — alternate embeddings; selected via the --embedding flag
 
-- `atom_init.json` — default embedding  
-- `atom_init_<variant>.json` — alternate versions selected via:
-
-–embedding 
-
-### Partial Charges (Optional)
-
-If available:
-
+Partial charges (optional):
+```
 dataset_root/charges/charges_dict.json
-
-Format:
-
+```
+Example format:
 ```json
 {
-  "QMOF_0001": [0.02, -0.13, 0.51],
-  "QMOF_0002": [-0.01, 0.22]
+    "QMOF_0001": [0.02, -0.13, 0.51],
+    "QMOF_0002": [-0.01, 0.22]
 }
+```
+Enable with --use-charge.
 
-Enable with:
+---
 
---use-charge
+## 3. Training
 
-⸻
-
-3. Training
-
-Run the training pipeline:
-
+Basic usage:
+```
 python main.py dataset_root \
-    --embedding default \
-    --use-charge false \
-    --epochs 200 \
-    --batch-size 256 \
-    --lr 0.01 \
-    --wandb-project cgcnn_mof
+        --embedding default \
+        --use-charge false \
+        --epochs 200 \
+        --batch-size 256 \
+        --lr 0.01 \
+        --wandb-project cgcnn_mof
+```
 
-Important Arguments
+Important arguments:
+- dataset_root: Directory containing CIFs + id_prop.csv
+- --embedding: Atom embedding name (default / variant)
+- --use-charge: true | false — append partial charges to atom features
+- --task: regression | classification
+- --random: random seed
+- --n-conv: number of convolution layers
+- --n-h: number of fully connected layers
+- --atom-fea-len: atom feature dimension
+- --h-fea-len: hidden layer dimension
+- --resume: path to checkpoint to resume
+- --lr-milestones: scheduler milestones
 
-Argument	Description
-dataset_root	Directory containing CIFs + id_prop.csv
-–embedding	Choose atom_init variant
-–use-charge	Append partial charges
-–task	regression or classification
-–random	Random seed
-–n-conv	Number of convolution layers
-–n-h	Number of fully connected layers
-–atom-fea-len	Atom feature dimension
-–h-fea-len	Hidden layer dimension
-–resume	Resume from checkpoint
-–lr-milestones	Learning rate scheduler
+Output files:
+- checkpoint.pth.tar
+- model_best_charge_<embedding>_<seed>.pth.tar
 
-Output Files
-	•	checkpoint.pth.tar
-	•	model_best_charge_<embedding>_<seed>.pth.tar
+---
 
-⸻
+## 4. Inference / Prediction
 
-4. Inference / Prediction
-
-Use the standalone prediction script:
-
+Run standalone prediction:
+```
 python predict.py \
-    model_best_charge_default_123.pth.tar \
-    dataset_root \
-    --embedding-name default \
-    --random-seed 123
-
-Outputs:
-
-test_results_pred.csv
-
-Format:
-
+        model_best_charge_default_123.pth.tar \
+        dataset_root \
+        --embedding-name default \
+        --random-seed 123
+```
+Produces test_results_pred.csv with columns:
+```
 qmof_id,target,predicted
+```
 
-⸻
+---
 
-5. Model Architecture (model.py)
+## 5. Model architecture (model.py)
 
-Key features:
-	•	Residual skip connections in every convolution layer
-	•	Optional GlobalContextModule for long-range structural information
-	•	Configurable model depth and hidden dimensions
-	•	Supports charge-augmented atom features
-	•	Flexible pooling and fully connected layers
+Highlights:
+- Residual skip connections in convolution layers
+- Optional GlobalContextModule for long-range structural context
+- Configurable depth and hidden sizes
+- Supports charge-augmented atom features
+- Flexible pooling and fully connected head
 
-Hyperparameters are controlled via:
+Controlled via:
+--n-conv, --n-h, --atom-fea-len, --h-fea-len
 
---n-conv
---n-h
---atom-fea-len
---h-fea-len
+---
 
-⸻
+## 6. Data pipeline (data.py)
 
-6. Data Pipeline (data.py)
+CIFData performs:
+- Reading structures with pymatgen
+- Building neighbor lists and Gaussian distance expansion
+- Creating atom features via AtomCustomJSONInitializer (atom_init.json)
+- Adding partial charges when enabled
+- Returning:
+    - atom_fea        (N_atoms, feature_dim)
+    - nbr_fea         (N_atoms, max_neighbors, dist_features)
+    - nbr_fea_idx     (neighbor indices)
+    - crystal_atom_idx (mapping atom index → crystal index)
 
-CIFData handles:
-	•	Reading structures via pymatgen
-	•	Building neighbor lists with Gaussian distance expansion
-	•	Creating atom features using AtomCustomJSONInitializer
-	•	Adding partial charges if enabled
-	•	Returning:
+All randomness is controlled with --random <seed>.
 
-atom_fea              # (N_atoms, feature_dim)
-nbr_fea               # (N_atoms, max_neighbors, dist_features)
-nbr_fea_idx           # neighbor indices
-crystal_atom_idx      # mapping atom index → crystal index
+---
 
-All steps are reproducible via:
+## 7. Checkpoints
 
---random <seed>
+Each checkpoint includes:
+- state_dict
+- optimizer state
+- normalizer
+- args
+- epoch
+- best_mae_error
 
-⸻
+predict.py will load these automatically.
 
-7. Checkpoints
+---
 
-Each checkpoint contains:
-	•	state_dict
-	•	optimizer
-	•	normalizer
-	•	args
-	•	epoch
-	•	best_mae_error
+## 8. Example training command
 
-predict.py loads these automatically.
-
-⸻
-
-8. Example Training Command
-
+```
 python main.py data/qmof_hse \
-    --task regression \
-    --embedding default \
-    --use-charge true \
-    --n-conv 3 \
-    --n-h 1 \
-    --atom-fea-len 64 \
-    --h-fea-len 128 \
-    --batch-size 256 \
-    --lr 0.01 \
-    --epochs 200 \
-    --random 42 \
-    --wandb-project mof_cgcnn_hse
+        --task regression \
+        --embedding default \
+        --use-charge true \
+        --n-conv 3 \
+        --n-h 1 \
+        --atom-fea-len 64 \
+        --h-fea-len 128 \
+        --batch-size 256 \
+        --lr 0.01 \
+        --epochs 200 \
+        --random 42 \
+        --wandb-project mof_cgcnn_hse
+```
 
-⸻
+---
 
-9. Example Prediction Command
+## 9. Example prediction command
 
+```
 python predict.py \
-    model_best_charge_default_42.pth.tar \
-    data/qmof_hse \
-    --embedding-name default \
-    --random-seed 42
+        model_best_charge_default_42.pth.tar \
+        data/qmof_hse \
+        --embedding-name default \
+        --random-seed 42
+```
+Output: test_results_pred.csv
 
-Produces:
+---
 
-test_results_pred.csv
+## 10. Notes
 
-⸻
-
-10. Notes
-	The implementation is compatible with:
-	•	QMOF dataset
-	•	New or custom MOF datasets
-	•	Custom atom embeddings
-	•	Charge-augmented feature sets
+- Compatible with QMOF and custom MOF datasets
+- Supports custom atom embeddings and charge-augmented feature sets
+- Ensure atom_init.json variants match the atom types in your CIFs
