@@ -1,12 +1,11 @@
 # Data-Driven Electronic Structure Analysis of Metal-Organic Frameworks  
-### Predicting HSE06 Band Gaps with Graph Neural Networks and Feature-Engineered Models
 
 This repository contains all code, workflows, and analysis scripts used in:
 
 **“Data-Driven Electronic Structure Analysis of Metal-Organic Frameworks”**  
 **Minhyuk Kang, Seung-Jae Shin, Tianshu Li, Aron Walsh**
 
-This work investigates machine-learning approaches for accurate prediction of **HSE06 band gaps** in ~15,000 MOFs, focusing especially on the **low-band-gap regime (Eg < 1.5 eV)** that governs conductivity-related applications. The repository includes:
+This work investigates machine-learning approaches for accurate prediction of **HSE06 band gaps** in ~15,000 MOFs, focusing especially on the conductivity-related applications. The repository includes:
 
 - Modified **CGCNN** with physics-informed atomic embeddings (partial atomic charges, electronic configuration features, GS properties).
 - Full **XGBoost baseline pipeline**, including feature extraction, feature selection, and SHAP interpretability.
@@ -17,37 +16,60 @@ This work investigates machine-learning approaches for accurate prediction of **
 
 ## Overview
 
-Accurate prediction of **low-band-gap MOFs** remains a difficult challenge for both traditional ML models and existing graph neural networks. Our findings highlight:
+Accurate prediction of **MOFs** remains a difficult challenge for both traditional ML models and existing graph neural networks. Our findings highlight:
 
 - Classical descriptors (RDF peaks, ordering parameters, pore metrics) help identify structural signatures of near-conductive MOFs.
 - Baseline ML models (RF, SVR, LASSO, XGBoost) achieve good global accuracy but **fail systematically for Eg < 1.5 eV**.
 - Standard CGCNN also overpredicts in this regime due to insufficient long-range electronic information.
-- Introducing **partial charge embeddings** (PACMAN-predicted charges) significantly improves prediction—particularly for low-band-gap MOFs.
+- Introducing **partial charge embeddings** (PACMAN-predicted charges) can improve prediction.
 - Case studies of **Zn-based MOFs** demonstrate structural categories (Zn–O bridges, clusters, single-metal units) where model performance differs due to charge-transport topology.
 
 ---
 
+# Poster Summary
+
+A full research poster describing this project is available here:
+
+[**📄 MRS Poster — Data-Driven Electronic Structure Analysis of MOFs**](results/MRSposter.pdf)
+
+The poster contains:
+- Research motivation  
+- MOF dataset sources  
+- HSE06 band gap calculations  
+- CGCNN architecture used  
+- XGBoost baseline comparison  
+- Key results and conclusions  
+
+---
+
 # Repository Structure
-|--- data/
-  |--- metadata/
-  |--- README.md
-|--- models/
-  |--- cgcnn/
-    |--- charges/
-    |--- data/
-    |--- data.py
-    |--- main.py
-    |--- model.py
-    |--- predict.py
-    |--- README.md
-  |--- xgb/
-    |--- data/
-    |--- main.py
-    |--- README.md
-|--- results/
-  |--- figures/
-  |--- scripts/
-|--- README.md
+
+```
+├── data/
+│   ├── metadata/
+│   └── README.md
+│
+├── models/
+│   ├── cgcnn/
+│   │   ├── charges/
+│   │   ├── data/
+│   │   ├── data.py
+│   │   ├── main.py
+│   │   ├── model.py
+│   │   ├── predict.py
+│   │   └── README.md
+│   │
+│   └── xgb/
+│       ├── data/
+│       ├── main.py
+│       └── README.md
+│
+├── results/
+│   ├── figures/
+│   └── scripts/
+│
+└── README.md
+```
 
 ---
 
@@ -69,7 +91,7 @@ Accurate prediction of **low-band-gap MOFs** remains a difficult challenge for b
    - Matminer: https://hackingmaterials.lbl.gov/matminer/  
    - PACMAN charges: https://github.com/Chung-Research-Group/PACMAN-charge
 
-If required, **the full processed dataset can be provided upon request**, subject to collaboration or sharing agreement.
+If required, **the full processed dataset can be provided upon request**.
 
 ---
 
